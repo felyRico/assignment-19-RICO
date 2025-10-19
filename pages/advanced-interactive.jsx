@@ -1,11 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import 'antd/dist/reset.css';
-import { Typography, Button, Modal, Tabs, List, Collapse, notification, message, Form, Input } from 'antd';
-import { ExclamationCircleOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  Typography,
+  Button,
+  Modal,
+  Tabs,
+  List,
+  Collapse,
+  notification,
+  message,
+  Form,
+  Input,
+  Popconfirm
+} from 'antd';
+import { DeleteOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
-const { TabPane } = Tabs;
-const { Panel } = Collapse;
 
 export default function AdvancedInteractive() {
   const [visible, setVisible] = useState(false);
@@ -15,9 +25,11 @@ export default function AdvancedInteractive() {
     role: 'DUMBASS'
   });
   const [form] = Form.useForm();
-  const [activities, setActivities] = useState([
-    'Logged in from Web',
-  ]);
+  const [activities, setActivities] = useState(['Logged in from Web']);
+
+  useEffect(() => {
+    form.setFieldsValue(user);
+  }, [user, form, visible]);
 
   const openModal = () => setVisible(true);
   const closeModal = () => setVisible(false);
@@ -26,13 +38,9 @@ export default function AdvancedInteractive() {
     try {
       const values = await form.validateFields();
       setUser(values);
-      // Record the profile update in the activity log
-      setActivities((prev) => ['Profile updated', ...prev]);
+      setActivities(prev => ['Profile updated', ...prev]);
       closeModal();
-      notification.success({
-        message: 'User info saved successfully',
-        duration: 2
-      });
+      notification.success({ message: 'User info saved successfully', duration: 2 });
     } catch (error) {
       message.error('Please check your input');
     }
@@ -43,23 +51,87 @@ export default function AdvancedInteractive() {
     message.warning('Changes were not saved');
   };
 
-  const confirmDelete = (index) => {
-    Modal.confirm({
-      title: 'Delete activity',
-      icon: <ExclamationCircleOutlined />,
-      content: 'Are you sure you want to delete this activity?',
-      okText: 'Delete',
-      okType: 'danger',
-      cancelText: 'Cancel',
-      onOk() {
-        setActivities((prev) => prev.filter((_, i) => i !== index));
-        notification.open({
-          message: 'Activity deleted',
-          duration: 1.8
-        });
-      }
-    });
+  const handleDelete = (index) => {
+    setActivities(prev => prev.filter((_, i) => i !== index));
+    message.success('Activity deleted successfully');
   };
+
+  const tabItems = [
+    {
+      key: '1',
+      label: 'Profile',
+      children: (
+        <Form form={form} layout="vertical" initialValues={user}>
+          <Form.Item
+            name="name"
+            label="Name"
+            rules={[{ required: true, message: 'Please input your name!' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[
+              { required: true, message: 'Please input your email!' },
+              { type: 'email', message: 'Please enter a valid email!' }
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="role"
+            label="Role"
+            rules={[{ required: true, message: 'Please input your role!' }]}
+          >
+            <Input />
+          </Form.Item>
+        </Form>
+      )
+    },
+    {
+      key: '2',
+      label: 'Activity',
+      children: (
+        <List
+          dataSource={activities}
+          renderItem={(item, index) => (
+            <List.Item
+              key={index}
+              extra={
+                <Popconfirm
+                  title="Delete this activity?"
+                  onConfirm={() => handleDelete(index)}
+                  okText="Delete"
+                  cancelText="Cancel"
+                >
+                  <Button type="text" danger icon={<DeleteOutlined />} />
+                </Popconfirm>
+              }
+            >
+              {item}
+            </List.Item>
+          )}
+        />
+      )
+    }
+  ];
+
+  const faqItems = [
+    {
+      key: 'faq-root',
+      label: 'Frequently Asked Questions (FAQ)',
+      children: (
+        <Collapse
+          items={[
+            { key: 'faq1', label: 'Who made this site?', children: 'I HAVE NO IDEA!' },
+            { key: 'faq2', label: 'What is this site for?', children: 'I HAVE NO IDEA!' },
+            { key: 'faq3', label: 'How do I', children: 'I HAVE NO IDEA!' }
+          ]}
+        />
+      )
+    }
+  ];
 
   return (
     <div className="dashboard-container">
@@ -84,17 +156,6 @@ export default function AdvancedInteractive() {
         .faq-section {
           margin-bottom: 1.5rem;
         }
-        /* Modal animation classes */
-        :global(.modal-enter .ant-modal-content) {
-          transform: translateY(0);
-          opacity: 1;
-          transition: all 220ms ease-out;
-        }
-        :global(.modal-leave .ant-modal-content) {
-          transform: translateY(-8px);
-          opacity: 0;
-          transition: all 180ms ease-in;
-        }
       `}</style>
 
       <div className="dashboard-header">
@@ -107,21 +168,7 @@ export default function AdvancedInteractive() {
       </div>
 
       <div className="faq-section">
-        <Collapse accordion>
-          <Panel header="Frequently Asked Questions (FAQ)" key="faq-root">
-            <Collapse>
-              <Panel header="Who made this site?" key="faq1">
-                <p>I HAVE NO IDEA!</p>
-              </Panel>
-              <Panel header="What is this site for?" key="faq2">
-                <p>I HAVE NO IDEA!</p>
-              </Panel>
-              <Panel header="How do I" key="faq3">
-                <p>I HAVE NO IDEA!</p>
-              </Panel>
-            </Collapse>
-          </Panel>
-        </Collapse>
+        <Collapse items={faqItems} accordion />
       </div>
 
       <Modal
@@ -130,57 +177,8 @@ export default function AdvancedInteractive() {
         onCancel={handleCancel}
         okText="Save"
         cancelText="Cancel"
-        className={visible ? 'modal-enter' : 'modal-leave'}
       >
-        <Tabs defaultActiveKey="1">
-          <TabPane tab="Profile" key="1">
-            <Form form={form} layout="vertical" initialValues={user}>
-              <Form.Item
-                name="name"
-                label="Name"
-                rules={[{ required: true, message: 'Please input your name!' }]}
-              >
-                <Input />
-              </Form.Item>
-              <Form.Item
-                name="email"
-                label="Email"
-                rules={[
-                  { required: true, message: 'Please input your email!' },
-                  { type: 'email', message: 'Please enter a valid email!' }
-                ]}
-              >
-                <Input />
-              </Form.Item>
-              <Form.Item
-                name="role"
-                label="Role"
-                rules={[{ required: true, message: 'Please input your role!' }]}
-              >
-                <Input />
-              </Form.Item>
-            </Form>
-          </TabPane>
-          <TabPane tab="Activity" key="2">
-            <List
-              dataSource={activities}
-              renderItem={(item, index) => (
-                <List.Item
-                  actions={[
-                    <Button
-                      key="d"
-                      type="text"
-                      icon={<DeleteOutlined />}
-                      onClick={() => confirmDelete(index)}
-                    />
-                  ]}
-                >
-                  <List.Item.Meta description={item} />
-                </List.Item>
-              )}
-            />
-          </TabPane>
-        </Tabs>
+        <Tabs defaultActiveKey="1" items={tabItems} />
       </Modal>
     </div>
   );
