@@ -11,7 +11,10 @@ import {
   message,
   Form,
   Input,
-  Popconfirm
+  Popconfirm,
+  Switch,
+  ConfigProvider,
+  theme
 } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 
@@ -19,10 +22,12 @@ const { Title } = Typography;
 
 export default function AdvancedInteractive() {
   const [visible, setVisible] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [hasShownMessage, setHasShownMessage] = useState(false);
   const [user, setUser] = useState({
-    name: 'DUMBASS',
-    email: 'DUMBASS@DUMBASS.com',
-    role: 'DUMBASS'
+    name: 'name',
+    email: 'mail@mail.com',
+    role: 'role'
   });
   const [form] = Form.useForm();
   const [activities, setActivities] = useState(['Logged in from Web']);
@@ -30,6 +35,13 @@ export default function AdvancedInteractive() {
   useEffect(() => {
     form.setFieldsValue(user);
   }, [user, form, visible]);
+
+  useEffect(() => {
+    if (!hasShownMessage) {
+      message.info('Welcome to the User Dashboard! This message will disappear in 3 seconds.', 3);
+      setHasShownMessage(true);
+    }
+  }, [hasShownMessage]);
 
   const openModal = () => setVisible(true);
   const closeModal = () => setVisible(false);
@@ -118,68 +130,75 @@ export default function AdvancedInteractive() {
   ];
 
   const faqItems = [
-    {
-      key: 'faq-root',
-      label: 'Frequently Asked Questions (FAQ)',
-      children: (
-        <Collapse
-          items={[
-            { key: 'faq1', label: 'Who made this site?', children: 'I HAVE NO IDEA!' },
-            { key: 'faq2', label: 'What is this site for?', children: 'I HAVE NO IDEA!' },
-            { key: 'faq3', label: 'How do I', children: 'I HAVE NO IDEA!' }
-          ]}
-        />
-      )
-    }
+    { key: 'faq1', label: 'Who made this site?', children: 'I HAVE NO IDEA!' },
+    { key: 'faq2', label: 'What is this site for?', children: 'I HAVE NO IDEA!' },
+    { key: 'faq3', label: 'How do I', children: 'I HAVE NO IDEA!' }
   ];
 
   return (
-    <div className="dashboard-container">
-      <style jsx>{`
-        .dashboard-container {
-          padding: 1.5rem;
-          max-width: 48rem;
-          margin: 0 auto;
-          background-color: white;
-          min-height: 100vh;
-        }
-        .dashboard-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 1rem;
-        }
-        .dashboard-title {
-          color: var(--foreground);
-          margin: 0;
-        }
-        .faq-section {
-          margin-bottom: 1.5rem;
-        }
-      `}</style>
+    <ConfigProvider
+      theme={{
+        algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+      }}
+    >
+      <div className="dashboard-container">
+        <style jsx>{`
+          .dashboard-container {
+            padding: 1.5rem;
+            max-width: 48rem;
+            margin: 0 auto;
+            background-color: ${darkMode ? '#141414' : 'white'};
+            color: ${darkMode ? '#ffffff' : '#000000'};
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+          }
+          .dashboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+          }
+          .dashboard-title {
+            color: ${darkMode ? '#ffffff' : 'var(--foreground)'};
+            margin: 0;
+          }
+          .faq-section {
+            margin-bottom: 1.5rem;
+          }
+        `}</style>
 
-      <div className="dashboard-header">
-        <Title level={3} className="dashboard-title">
-          User Dashboard
-        </Title>
-        <Button type="primary" onClick={openModal}>
-          Open User Info
-        </Button>
+        <div className="dashboard-header">
+          <Title level={3} className="dashboard-title">
+            User Dashboard
+          </Title>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span>Dark Mode</span>
+            <Switch checked={darkMode} onChange={setDarkMode} />
+            <Button type="primary" onClick={openModal}>
+              Open User Info
+            </Button>
+          </div>
+        </div>
+
+        <div className="faq-section">
+          <Collapse items={faqItems} accordion />
+        </div>
+
+        <Modal
+          open={visible}
+          onOk={handleSave}
+          onCancel={handleCancel}
+          okText="Save"
+          cancelText="Cancel"
+          style={{
+            transition: 'all 0.3s ease-in-out',
+            transform: visible ? 'scale(1)' : 'scale(0.9)',
+            opacity: visible ? 1 : 0
+          }}
+        >
+          <Tabs defaultActiveKey="1" items={tabItems} />
+        </Modal>
       </div>
-
-      <div className="faq-section">
-        <Collapse items={faqItems} accordion />
-      </div>
-
-      <Modal
-        open={visible}
-        onOk={handleSave}
-        onCancel={handleCancel}
-        okText="Save"
-        cancelText="Cancel"
-      >
-        <Tabs defaultActiveKey="1" items={tabItems} />
-      </Modal>
-    </div>
+    </ConfigProvider>
   );
 }
